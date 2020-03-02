@@ -4,19 +4,30 @@ import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.xwpf.usermodel.*;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static java.lang.System.out;
 
 /**
  * Created by Feng-master on 20/03/02.
  */
 public class PoiUtil {
 
-    public static boolean isEmpty(Cell cell){
-        return getCellValue(cell)==null||getCellValue(cell).equals("");
+    public static boolean isEmpty(Cell cell) {
+        return getCellValue(cell) == null || getCellValue(cell).equals("");
     }
 
     /**
@@ -87,6 +98,78 @@ public class PoiUtil {
         }
         return cellValue;
     }
+
+    /**
+     * @param str
+     * @return
+     */
+    private static Matcher matcher(String str) {
+        Pattern pattern = Pattern.compile("\\$\\{(.+?)\\}", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(str);
+        return matcher;
+    }
+
+
+    public static void wordReplace(XWPFParagraph paragraph, Map<String, String> params) {
+        List<XWPFRun> runs = paragraph.getRuns();
+        for (XWPFRun run : runs) {
+            String text = run.getText(0);
+            if(text!=null){
+                boolean isSetText = false;
+                for (Map.Entry<String, String> entry : params.entrySet()) {
+                    String key = entry.getKey();
+                    String value = entry.getValue();
+                    if(text.indexOf(key)!=-1){
+                        isSetText = true;
+                        text = text.replaceAll(key, value);
+                    }
+                    if (isSetText) {
+                        run.setText(text, 0);
+                    }
+                }
+
+            }
+
+        }
+    }
+
+    public static void wordReplace(XWPFDocument doc, Map<String, String> params) {
+
+
+            //处理段落
+            //------------------------------------------------------------------
+            List<XWPFParagraph> paragraphs = doc.getParagraphs();
+            for (XWPFParagraph paragraph : paragraphs) {
+                wordReplace(paragraph,params);
+            }
+
+            //------------------------------------------------------------------
+
+            //处理表格
+            //------------------------------------------------------------------
+            List<XWPFTable> tables = doc.getTables();
+            for (XWPFTable table : tables) {
+                List<XWPFTableRow> rows = table.getRows();
+                for (XWPFTableRow row : rows) {
+                    List<XWPFTableCell> cells = row.getTableCells();
+                    for (XWPFTableCell cell : cells) {
+                        List<XWPFParagraph> paragraphList = cell.getParagraphs();
+                        for (XWPFParagraph paragraph : paragraphList) {
+                            wordReplace(paragraph,params);
+                        }
+
+                    }
+
+                }
+            }
+
+
+
+
+    }
+
+
+
 
 }
 

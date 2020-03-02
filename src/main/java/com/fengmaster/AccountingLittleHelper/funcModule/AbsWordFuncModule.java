@@ -17,7 +17,7 @@ public abstract class AbsWordFuncModule {
         this.workbook=workbook;
     }
 
-    public abstract XWPFDocument progress(FileProgressBaseUnit fileProgressBaseUnit);
+    public abstract void progress(FileProgressBaseUnit fileProgressBaseUnit);
 
 
 

@@ -32,10 +32,10 @@ public class ReplaceWordFuncModule extends AbsWordFuncModule {
 
     private void readReplaceSetting(Workbook workbook){
         Sheet sheet = workbook.getSheet("原始数据");
-        Row settingRow = sheet.getRow(2);
+        Row settingRow = sheet.getRow(1);
         for (Cell cell : settingRow) {
 //            {}这种表达将会被替换
-            if (PoiUtil.getCellValue(cell).startsWith("{")&&PoiUtil.getCellValue(cell).endsWith("}")){
+            if (PoiUtil.getCellValue(cell).startsWith("｛")&&PoiUtil.getCellValue(cell).endsWith("｝")){
                 //替换表达所在列
                 int replaceRegColumnIndex=cell.getColumnIndex();
                 //要被替换的表达式文本
@@ -48,17 +48,21 @@ public class ReplaceWordFuncModule extends AbsWordFuncModule {
     }
 
     @Override
-    public XWPFDocument progress(FileProgressBaseUnit fileProgressBaseUnit) {
+    public void progress(FileProgressBaseUnit fileProgressBaseUnit) {
         Row row = fileProgressBaseUnit.getRow();
+
+        Map<String, String> params=new HashMap<>();
+
         indexRegMap.forEach(new BiConsumer<Integer, String>() {
             @Override
             public void accept(Integer columnIndex, String reg) {
                 Cell newTextCell = row.getCell(columnIndex);
-
+                params.put(reg,PoiUtil.getCellValue(newTextCell));
 
             }
         });
 
-        return null;
+        PoiUtil.wordReplace(fileProgressBaseUnit.getDoc(),params);
+
     }
 }

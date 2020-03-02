@@ -26,9 +26,9 @@ public class FileProgressBaseUnit {
     private String inputFilePath;
 
 
-    private XWPFDocument inputDoc;
+    private XWPFDocument doc;
 
-    private XWPFDocument outputDoc;
+
 
     /**
      * 行
