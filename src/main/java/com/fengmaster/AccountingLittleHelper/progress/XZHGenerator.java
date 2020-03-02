@@ -1,14 +1,15 @@
 package com.fengmaster.AccountingLittleHelper.progress;
 
-import jxl.Sheet;
-import jxl.Workbook;
-import jxl.read.biff.BiffException;
+import com.fengmaster.AccountingLittleHelper.util.PoiUtil;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 询证函生成器
@@ -16,7 +17,11 @@ import java.util.Map;
 public class XZHGenerator implements  IProgress{
 
 
-    private Map<String,String> template=new HashMap<String, String>();
+
+    //模版map
+    private Map<String,String> templateMap =new HashMap<String, String>();
+
+
 
     public String getName() {
         return "XZH";
@@ -24,59 +29,116 @@ public class XZHGenerator implements  IProgress{
 
     public boolean progress(String[] args) {
 
+        Workbook workbook=null;
 
-        // 此处为我创建Excel路径：E:/zhanhj/studysrc/jxl下
-        File file = new File("D:/readExcel.xls");
-        List excelList = readExcel(file);
-        System.out.println("list中的数据打印出来");
-        for (int i = 0; i < excelList.size(); i++) {
-            List list = (List) excelList.get(i);
-            for (int j = 0; j < list.size(); j++) {
-                System.out.print(list.get(j));
-            }
-            System.out.println();
+        templateMap =new HashMap<String, String>();
+
+
+
+        try {
+            workbook = readWordBook(args[1]);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
+        templateMap= readConf(workbook);
+
+
 
         return false;
     }
 
-    // 去读Excel的方法readExcel，该方法的入口参数为一个File对象
-    public List readExcel(File file) {
-        try {
-            // 创建输入流，读取Excel
-            InputStream is = new FileInputStream(file.getAbsolutePath());
-            // jxl提供的Workbook类
-            Workbook wb = Workbook.getWorkbook(is);
-            // Excel的页签数量
-            int sheet_size = wb.getNumberOfSheets();
-            for (int index = 0; index < sheet_size; index++) {
-                List<List> outerList=new ArrayList<List>();
-                // 每个页签创建一个Sheet对象
-                Sheet sheet = wb.getSheet(index);
-                // sheet.getRows()返回该页的总行数
-                for (int i = 1; i < sheet.getRows(); i++) {
-                    List innerList=new ArrayList();
-                    // sheet.getColumns()返回该页的总列数
-                    for (int j = 0; j < sheet.getColumns(); j++) {
-                        String cellinfo = sheet.getCell(j, i).getContents();
-                        if(cellinfo.isEmpty()){
-                            continue;
-                        }
-                        innerList.add(cellinfo);
-                        System.out.print(cellinfo);
-                    }
-                    outerList.add(i, innerList);
-                    System.out.println();
+    private List<Map<String,String>> readReplaceSetting(Workbook workbook){
+        List<List<Map<String,String>> > allReplaceList=new LinkedList<List<Map<String, String>>>();
+        Sheet sheet = workbook.getSheet("原始数据");
+
+        Row settingRow = sheet.getRow(2);
+        for (Cell cell : settingRow) {
+//            {}这种表达将会被替换
+            if (PoiUtil.getCellValue(cell).startsWith("{")&&PoiUtil.getCellValue(cell).endsWith("}")){
+
+                //替换表达所在列
+                int replaceRegColumnIndex=cell.getColumnIndex();
+                //要被替换的表达式文本
+                String replaceReg=PoiUtil.getCellValue(cell);
+
+                int startRowIndex=3;
+
+                Row replaceRow=sheet.getRow(startRowIndex);
+
+                while (PoiUtil.isEmpty(replaceRow.getCell(1))){
+
+                    Map<String,String> map=new HashMap<String, String>();
+                    //需要替换的真实数据
+                    Cell newText = replaceRow.getCell(replaceRegColumnIndex);
+                    map.put(replaceReg,PoiUtil.getCellValue(newText));
+
+
+
+                    replaceRow=sheet.getRow(++startRowIndex);
                 }
-                return outerList;
+
+
             }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (BiffException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+
         }
-        return null;
+
+        return allReplaceList;
     }
+
+    private Workbook readWordBook(String filePath) throws IOException {
+        Workbook workbook=null;
+        InputStream fis = null;
+
+        
+
+        fis = new FileInputStream(filePath);
+        if (filePath.endsWith(".xlsx")) {
+            workbook = new XSSFWorkbook(fis);
+        } else if (filePath.endsWith(".xls") || filePath.endsWith(".et")) {
+            workbook = new HSSFWorkbook(fis);
+        }
+        fis.close();
+
+        return workbook;
+
+        }
+
+
+    private Map<String,String> readConf(Workbook workbook){
+
+        Map<String,String> tMap=new HashMap<String, String>();
+
+        InputStream fis = null;
+        try {
+            /* 读EXCEL文字内容 */
+            // 获取第一个sheet表，也可使用sheet表名获取
+            Sheet sheet = workbook.getSheet("模版配置");
+            // 获取行
+            Iterator<Row> rows = sheet.rowIterator();
+            Row row;
+            Cell cell;
+            rows.next();
+            while (rows.hasNext()) {
+                row = rows.next();
+                // 获取单元格
+                tMap.put(PoiUtil.getCellValue(row.getCell(0)),PoiUtil.getCellValue(row.getCell(1)));
+
+            }
+        } finally {
+            if (null != fis) {
+                try {
+                    fis.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+
+        return tMap;
+
+    }
+
+
 }
