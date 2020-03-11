@@ -99,16 +99,6 @@ public class PoiUtil {
         return cellValue;
     }
 
-    /**
-     * @param str
-     * @return
-     */
-    private static Matcher matcher(String str) {
-        Pattern pattern = Pattern.compile("\\$\\{(.+?)\\}", Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(str);
-        return matcher;
-    }
-
 
     public static void wordReplace(XWPFParagraph paragraph, Map<String, String> params) {
         List<XWPFRun> runs = paragraph.getRuns();
@@ -142,6 +132,7 @@ public class PoiUtil {
             for (XWPFParagraph paragraph : paragraphs) {
                 wordReplace(paragraph,params);
             }
+
 
             //------------------------------------------------------------------
 

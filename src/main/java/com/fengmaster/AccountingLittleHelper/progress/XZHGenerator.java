@@ -28,10 +28,12 @@ public class XZHGenerator implements  IProgress {
     private String inputFilePath;
 
 
+    @Override
     public String getName() {
         return "XZH";
     }
 
+    @Override
     public boolean progress(String[] args) {
 
         Workbook workbook = null;
